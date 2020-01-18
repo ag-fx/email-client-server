@@ -1,0 +1,4 @@
+rootProject.name = 'email-client-server'
+include 'email-common'
+include 'email-client'
+include 'email-server'
