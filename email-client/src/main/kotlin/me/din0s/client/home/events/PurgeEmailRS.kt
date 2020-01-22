@@ -4,4 +4,4 @@ import me.din0s.common.responses.IResponse
 import tornadofx.EventBus
 import tornadofx.FXEvent
 
-class PurgeEmailRS(val res: IResponse) : FXEvent()
+data class PurgeEmailRS(val res: IResponse) : FXEvent()

@@ -1,20 +1,11 @@
 package me.din0s.client.viewer
 
-import javafx.geometry.VPos
-import me.din0s.client.writer.events.SendEmailRQ
 import me.din0s.common.entities.Email
 import tornadofx.*
-import java.awt.Color
-import java.beans.EventHandler
 
 class ViewerView(private val email: Email) : View(email.subject) {
-    init {
-        ViewerController.init()
-    }
-
     override fun onDock() {
         super.onDock()
-
         with(currentStage!!) {
             isResizable = true
             centerOnScreen()
@@ -27,23 +18,25 @@ class ViewerView(private val email: Email) : View(email.subject) {
                 field("From:") {
                     textfield(email.sender) {
                         isEditable = false
+                        isFocusTraversable = false
                     }
                 }
                 field("To:") {
                     textfield(email.receiver) {
                         isEditable = false
+                        isFocusTraversable = false
                     }
                 }
                 field("Topic:") {
                     textfield(email.subject) {
                         isEditable = false
+                        isFocusTraversable = false
                     }
                 }
-                text {
-                    requestFocus()
-                }
+                text()
                 textarea(email.mainBody) {
                     isEditable = false
+                    isFocusTraversable = false
                 }
             }
         }

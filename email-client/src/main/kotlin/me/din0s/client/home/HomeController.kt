@@ -8,20 +8,33 @@ import me.din0s.common.requests.email.ReadEmailRQ
 import me.din0s.common.requests.email.ShowEmailsRQ
 import me.din0s.common.responses.email.ReadEmailRS
 import me.din0s.common.responses.email.ShowEmailsRS
+import me.din0s.common.responses.generic.ErrorRS
 import tornadofx.Controller
 
 object HomeController : Controller() {
     fun init() {
         subscribe<FetchListRQ> {
-            with(MailClient.send(ShowEmailsRQ)) { this as ShowEmailsRS
-                fire(FetchListRS(this.mailbox))
+            with(MailClient.send(ShowEmailsRQ)) {
+                if (this is ShowEmailsRS) {
+                    fire(FetchListRS(this.mailbox))
+                } else {
+                    error("Unexpected response: $this")
+                }
             }
         }
 
         subscribe<FetchEmailRQ> {
             with(MailClient.send(ReadEmailRQ(it.id))) {
-                if (this is ReadEmailRS) {
-                    fire(FetchEmailRS(this.email))
+                when (this) {
+                    is ReadEmailRS -> {
+                        fire(FetchEmailRS(this.email))
+                    }
+                    is ErrorRS -> {
+                        error("Error code: ${this.getCode()}")
+                    }
+                    else -> {
+                        error("Unexpected response: $this")
+                    }
                 }
             }
         }

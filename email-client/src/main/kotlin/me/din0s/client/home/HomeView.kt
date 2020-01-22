@@ -22,13 +22,16 @@ import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
 class HomeView : View("Mail Client") {
+    private val emails = observableListOf<EmailPreview>()
+
     init {
         HomeController.init()
-        fire(FetchListRQ)
     }
 
     override fun onDock() {
         super.onDock()
+        emails.clear()
+        fire(FetchListRQ)
         with(currentStage!!) {
             isResizable = true
             minWidth = 550.0
@@ -41,24 +44,22 @@ class HomeView : View("Mail Client") {
 
     private class EmailPreview(id: String, subject: String, sender: String, read: Boolean, date: OffsetDateTime) {
         val idProperty = SimpleStringProperty(id)
-        val id by idProperty
+        val id: String by idProperty
 
         val subjectProperty = SimpleStringProperty(subject)
-        val subject by subjectProperty
+        val subject: String by subjectProperty
 
         val senderProperty = SimpleStringProperty(sender)
-        val sender by senderProperty
+        val sender: String by senderProperty
 
         val readProperty = SimpleBooleanProperty(read)
-        var read by readProperty
+        var read: Boolean by readProperty
 
         val dateProperty = SimpleStringProperty(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(date).replace("T", " "))
-        var date by dateProperty
+        var date: String by dateProperty
     }
 
     override val root = borderpane {
-        val emails = observableListOf<EmailPreview>()
-
         subscribe<FetchListRS> {
             emails.setAll(it.mailbox.sortedByDescending { e -> e.date }.map { e -> EmailPreview(e.id, e.subject, e.sender, e.isRead, e.date) })
         }
@@ -67,7 +68,12 @@ class HomeView : View("Mail Client") {
             ViewerView(it.email).openWindow()
         }
 
-        left = borderpane() {
+        subscribe<DisconnectRS> {
+            MailClient.closeConnection()
+            replaceWith<AuthView>()
+        }
+
+        left = borderpane {
             paddingAll = 12.0
 
             top = vbox {
@@ -93,7 +99,6 @@ class HomeView : View("Mail Client") {
             bottom = button("Log Out") {
                 onAction = EventHandler {
                     fire(DisconnectRQ)
-                    replaceWith<AuthView>()
                 }
             }
         }

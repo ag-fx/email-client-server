@@ -25,12 +25,14 @@ class ClientHandler(client: Socket) {
     private val input = ObjectInputStream(client.getInputStream())
     private val output = ObjectOutputStream(client.getOutputStream())
 
+    private lateinit var acc: Account
+    private var isAuthenticated = false
+    private var isRunning = true
+
     init {
-        var acc: Account? = null
-        var run = true
         input.use { input ->
             output.use {
-                while (run) {
+                while (isRunning) {
                     val req = input.readObject()
                     if (req !is IRequest) {
                         writeErr(ResponseCode.BAD_REQUEST)
@@ -38,7 +40,7 @@ class ClientHandler(client: Socket) {
                     } else {
                         println("> Incoming request: $req")
                     }
-                    if (req.needAuth() && acc == null) {
+                    if (req.needAuth() && !isAuthenticated) {
                         writeErr(ResponseCode.NO_AUTH)
                     } else {
                         when (req) {
@@ -49,7 +51,8 @@ class ClientHandler(client: Socket) {
                                     writeErr(ResponseCode.MAIL_EXISTS)
                                 } else {
                                     acc = Account(user, pwd)
-                                    MailServer.addAccount(acc!!)
+                                    isAuthenticated = true
+                                    MailServer.addAccount(acc)
                                     writeOk()
                                 }
                             }
@@ -58,14 +61,11 @@ class ClientHandler(client: Socket) {
                                 val authAcc = MailServer.authenticateUser(user, pwd)
                                 if (authAcc != null) {
                                     acc = authAcc
+                                    isAuthenticated = true
                                     writeOk()
                                 } else {
                                     writeErr(ResponseCode.AUTH_FAIL)
                                 }
-                            }
-                            is LogoutRQ -> {
-                                acc = null
-                                writeOk()
                             }
                             /* EMAIL HANDLING */
                             is NewEmailRQ -> {
@@ -74,18 +74,18 @@ class ClientHandler(client: Socket) {
                                 if (recipient == null) {
                                     writeErr(ResponseCode.INVALID_RECIPIENT)
                                 } else {
-                                    val sender = acc!!.username
+                                    val sender = acc.username
                                     val email = Email(sender, receiver, subject, body)
-                                    acc!!.mailbox.addEmail(email)
+                                    recipient.mailbox.addEmail(email)
                                     writeOk()
                                 }
                             }
                             is ShowEmailsRQ -> {
-                                write(ShowEmailsRS(acc!!.mailbox.getAll()))
+                                write(ShowEmailsRS(acc.mailbox.getAll()))
                             }
                             is ReadEmailRQ -> {
                                 val (id, pureAck) = req
-                                val email = acc!!.mailbox.readEmail(id)
+                                val email = acc.mailbox.readEmail(id)
                                 if (email == null) {
                                     writeErr(ResponseCode.INVALID_EMAIL_ID)
                                 } else {
@@ -98,16 +98,17 @@ class ClientHandler(client: Socket) {
                             }
                             is DeleteEmailRQ -> {
                                 val (id) = req
-                                if (acc!!.mailbox.deleteEmail(id)) {
+                                if (acc.mailbox.deleteEmail(id)) {
                                     writeOk()
                                 } else {
                                     writeErr(ResponseCode.INVALID_EMAIL_ID)
                                 }
                             }
                             /* CONNECTION HANDLING */
-                            is ExitRQ -> {
+                            is LogoutRQ, is ExitRQ -> {
+                                isRunning = false
+                                isAuthenticated = false
                                 writeOk()
-                                run = false
                             }
                         }
                     }

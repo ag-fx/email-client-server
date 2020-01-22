@@ -1,16 +1,13 @@
 package me.din0s.client
 
+import javafx.stage.Stage
 import me.din0s.client.auth.AuthView
 import me.din0s.common.requests.IRequest
-import me.din0s.common.requests.auth.LogoutRQ
 import me.din0s.common.requests.connection.ExitRQ
 import me.din0s.common.responses.IResponse
-import me.din0s.common.responses.generic.OkRS
 import tornadofx.App
 import tornadofx.launch
-import java.io.ObjectInputStream
-import java.io.ObjectOutputStream
-import java.net.Socket
+import java.lang.IllegalStateException
 
 fun main(args: Array<String>) {
     val ip: String
@@ -37,38 +34,41 @@ class MailClient : App(AuthView::class) {
         val args = parameters.raw
         val ip = args[0]
         val port = args[1]
-        print("> Connecting to ${ip}:$port ... ")
-        socket = Socket(ip, port.toInt())
-        sOut = ObjectOutputStream(socket.getOutputStream())
-        sIn = ObjectInputStream(socket.getInputStream())
-        println("Done! Launching app.")
+        handler = RequestHandler(ip, port)
+    }
+
+    override fun start(stage: Stage) {
+        stage.width = STARTING_WIDTH
+        stage.height = STARTING_HEIGHT - 4.0
+        super.start(stage)
     }
 
     override fun stop() {
-        print("> Sending 'EXIT' request ... ")
-        sOut.writeObject(ExitRQ)
-        socket.close()
-        sIn.close()
-        sOut.close()
-        println("Done, bye!")
-        super.stop()
+        if (handler.isOpen()) {
+            send(ExitRQ)
+        }
+        closeConnection()
+        try {
+            super.stop()
+        } catch(_: IllegalStateException) {}
     }
 
     companion object {
-        private lateinit var socket: Socket
-        private lateinit var sOut: ObjectOutputStream
-        private lateinit var sIn: ObjectInputStream
+        const val STARTING_WIDTH = 400.0
+        const val STARTING_HEIGHT = 275.0
+
+        private lateinit var handler: RequestHandler
+
+        fun openConnection() {
+            handler.openSocket()
+        }
 
         fun send(req: IRequest): IResponse {
-            println("> Outgoing request $req")
-            sOut.writeObject(req)
-            val res = sIn.readObject()
-            if (res is IResponse) {
-                println("> Incoming response $res")
-                return res
-            } else {
-                error("Received unexpected response")
-            }
+            return handler.sendRequest(req)
+        }
+
+        fun closeConnection() {
+            handler.closeSocket()
         }
     }
 }

@@ -1,6 +1,7 @@
 package me.din0s.server
 
 import me.din0s.common.entities.Account
+import java.io.EOFException
 import java.net.ServerSocket
 import kotlin.concurrent.thread
 
@@ -27,8 +28,12 @@ object MailServer {
             println("> Server running on port $port")
             while (true) {
                 val client = server.accept()
+                println("> Opened connection with ${client.inetAddress.hostAddress}")
                 thread {
-                    ClientHandler(client)
+                    try {
+                        ClientHandler(client)
+                    } catch (_: EOFException) {}
+                    println("> Closed connection with ${client.inetAddress.hostAddress}")
                 }
             }
         }

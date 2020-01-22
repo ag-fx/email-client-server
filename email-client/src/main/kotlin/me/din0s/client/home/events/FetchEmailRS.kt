@@ -4,4 +4,4 @@ import me.din0s.common.entities.Email
 import tornadofx.EventBus
 import tornadofx.FXEvent
 
-class FetchEmailRS(val email: Email) : FXEvent()
+data class FetchEmailRS(val email: Email) : FXEvent()
