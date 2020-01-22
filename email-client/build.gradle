@@ -15,7 +15,7 @@ compileKotlin {
 
 dependencies {
     compile project(':email-common')
-    compile group: 'no.tornado', name: 'tornadofx', version: '1.7.19'
+    implementation 'no.tornado:tornadofx:1.7.19'
     implementation platform('org.jetbrains.kotlin:kotlin-bom')
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
 }

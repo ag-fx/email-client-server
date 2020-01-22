@@ -42,6 +42,7 @@ object MailServer {
     private val accounts = mutableListOf<Account>()
 
     fun init(port: Int) {
+        accounts.add(Account("dinos", "dinos"))
         ServerSocket(port).use { server ->
             println("> Server running on port $port")
             while (true) {

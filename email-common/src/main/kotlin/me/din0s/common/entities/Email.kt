@@ -1,15 +1,15 @@
 package me.din0s.common.entities
 
-import java.util.concurrent.atomic.AtomicInteger
-
-val counter = AtomicInteger()
+import me.nimavat.shortid.ShortId
+import java.io.Serializable
+import java.time.OffsetDateTime
 
 data class Email(
-    var isRead: Boolean = false,
     val sender: String,
     val receiver: String,
     val subject: String,
-    val mainBody: String
-) {
-    val id = counter.getAndIncrement()
-}
+    val mainBody: String,
+    var isRead: Boolean = false,
+    val id: String = ShortId.generate(),
+    val date: OffsetDateTime = OffsetDateTime.now()
+) : Serializable

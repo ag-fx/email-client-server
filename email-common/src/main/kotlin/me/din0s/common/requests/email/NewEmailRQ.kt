@@ -1,5 +1,3 @@
 package me.din0s.common.requests.email
 
-import me.din0s.common.entities.Email
-
-data class NewEmailRQ(val email: Email) : IEmailRQ
+data class NewEmailRQ(val receiver: String, val subject: String, val body: String) : IEmailRQ

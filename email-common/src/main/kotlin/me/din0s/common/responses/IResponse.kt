@@ -4,5 +4,5 @@ import java.io.Serializable
 
 interface IResponse : Serializable {
     fun getCode(): ResponseCode
-    fun getContent(): String? = null
+//    fun getContent(): String? = null
 }

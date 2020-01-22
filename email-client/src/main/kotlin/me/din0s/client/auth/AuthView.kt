@@ -11,13 +11,15 @@ import javafx.scene.control.TextField
 import javafx.scene.input.KeyCode
 import javafx.scene.paint.Color
 import javafx.scene.text.Font
+import me.din0s.client.MailClient
 import me.din0s.client.auth.events.ClientAuthRQ
 import me.din0s.client.auth.events.ClientAuthRS
 import me.din0s.client.auth.events.SwitchPage
+import me.din0s.client.home.HomeView
 import me.din0s.common.responses.generic.OkRS
 import tornadofx.*
 
-open class AuthView : View("Mail Client") {
+class AuthView : View("Mail Client") {
     private val username = SimpleStringProperty()
     private val password = SimpleStringProperty()
     private var isLogin = true
@@ -26,9 +28,15 @@ open class AuthView : View("Mail Client") {
         AuthController.init()
     }
 
+    override fun onDock() {
+        super.onDock()
+        currentStage?.isResizable = false
+    }
+
     override val root = borderpane {
         subscribe<SwitchPage> {
             isLogin = !isLogin
+            scene.reset()
             val name = (lookup("#name") as TextField)
             name.clear()
             name.requestFocus()
@@ -45,8 +53,8 @@ open class AuthView : View("Mail Client") {
 
         subscribe<ClientAuthRS> {
             if (it.res is OkRS) {
-                scene.reset()
-                information("OK!")
+                MailClient.user = username.value
+                replaceWith<HomeView>()
             } else {
                 scene.reset()
                 if (isLogin) {
@@ -60,6 +68,8 @@ open class AuthView : View("Mail Client") {
         center = form {
             fieldset("Log In") {
                 id = "fieldText"
+
+                label()
 
                 style {
                     alignment = Pos.CENTER

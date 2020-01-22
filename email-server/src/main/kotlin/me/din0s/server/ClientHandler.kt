@@ -1,6 +1,8 @@
 package me.din0s.server
 
 import me.din0s.common.entities.Account
+import me.din0s.common.entities.Email
+import me.din0s.common.entities.Mailbox
 import me.din0s.common.requests.IRequest
 import me.din0s.common.requests.auth.LoginRQ
 import me.din0s.common.requests.auth.LogoutRQ
@@ -34,7 +36,7 @@ class ClientHandler(client: Socket) {
                     writeErr(ResponseCode.BAD_REQUEST)
                     error("Received invalid request. Closing connection")
                 } else {
-                    println(req)
+                    println("> Incoming request: $req")
                 }
                 if (req.needAuth() && acc == null) {
                     writeErr(ResponseCode.NO_AUTH)
@@ -67,36 +69,39 @@ class ClientHandler(client: Socket) {
                         }
                         /* EMAIL HANDLING */
                         is NewEmailRQ -> {
-                            val (email) = req
-                            val recipient = MailServer.getUser(email.receiver)
+                            val (receiver, subject, body) = req
+                            val recipient = MailServer.getUser(receiver)
                             if (recipient == null) {
                                 writeErr(ResponseCode.INVALID_RECIPIENT)
                             } else {
-                                recipient.mailbox.add(email)
+                                val sender = acc!!.username
+                                val email = Email(sender, receiver, subject, body)
+                                acc.mailbox.addEmail(email)
                                 writeOk()
                             }
                         }
                         is ShowEmailsRQ -> {
-                            val emails = acc!!.mailbox
-                            write(ShowEmailsRS(emails))
+                            write(ShowEmailsRS(acc!!.mailbox.getAll()))
                         }
                         is ReadEmailRQ -> {
-                            val (id) = req
-                            val email = acc!!.getEmail(id)
+                            val (id, pureAck) = req
+                            val email = acc!!.mailbox.readEmail(id)
                             if (email == null) {
                                 writeErr(ResponseCode.INVALID_EMAIL_ID)
                             } else {
-                                write(ReadEmailRS(email))
+                                if (pureAck) {
+                                    writeOk()
+                                } else {
+                                    write(ReadEmailRS(email))
+                                }
                             }
                         }
                         is DeleteEmailRQ -> {
                             val (id) = req
-                            val email = acc!!.getEmail(id)
-                            if (email == null) {
-                                writeErr(ResponseCode.INVALID_EMAIL_ID)
-                            } else {
-                                acc.mailbox.remove(email)
+                            if (acc!!.mailbox.deleteEmail(id)) {
                                 writeOk()
+                            } else {
+                                writeErr(ResponseCode.INVALID_EMAIL_ID)
                             }
                         }
                         /* CONNECTION HANDLING */
@@ -113,6 +118,7 @@ class ClientHandler(client: Socket) {
     }
 
     private fun write(res: IResponse) {
+        println("> Outgoing response: $res")
         output.writeObject(res)
     }
 

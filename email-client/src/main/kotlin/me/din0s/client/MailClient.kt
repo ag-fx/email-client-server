@@ -1,15 +1,15 @@
 package me.din0s.client
 
-import javafx.stage.Stage
 import me.din0s.client.auth.AuthView
 import me.din0s.common.requests.IRequest
 import me.din0s.common.requests.connection.ExitRQ
 import me.din0s.common.responses.IResponse
 import tornadofx.App
 import tornadofx.launch
+import java.io.InputStream
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
-import java.lang.Exception
+import java.io.OutputStream
 import java.net.Socket
 
 fun main(args: Array<String>) {
@@ -32,7 +32,6 @@ fun main(args: Array<String>) {
 }
 
 class MailClient : App(AuthView::class) {
-
     override fun init() {
         super.init()
         val args = parameters.raw
@@ -43,11 +42,6 @@ class MailClient : App(AuthView::class) {
         sOut = ObjectOutputStream(socket.getOutputStream())
         sIn = ObjectInputStream(socket.getInputStream())
         println("Done! Launching app.")
-    }
-
-    override fun start(stage: Stage) {
-        stage.isResizable = false
-        super.start(stage)
     }
 
     override fun stop() {
@@ -66,11 +60,14 @@ class MailClient : App(AuthView::class) {
         private lateinit var socket: Socket
         private lateinit var sOut: ObjectOutputStream
         private lateinit var sIn: ObjectInputStream
+        lateinit var user: String
 
         fun send(req: IRequest): IResponse {
+            println("> Outgoing request $req")
             sOut.writeObject(req)
             val res = sIn.readObject()
             if (res is IResponse) {
+                println("> Incoming response $res")
                 return res
             } else {
                 error("Received unexpected response")

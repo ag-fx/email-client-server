@@ -4,6 +4,7 @@ plugins {
 }
 
 dependencies {
+    implementation 'me.nimavat:shortid:1.0.1.RC1'
     implementation platform('org.jetbrains.kotlin:kotlin-bom')
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
 }

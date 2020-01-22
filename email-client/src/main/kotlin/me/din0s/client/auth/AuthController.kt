@@ -15,7 +15,6 @@ object AuthController : Controller() {
                 else -> RegisterRQ(it.user, it.pwd)
             }
             with(MailClient.send(req)) {
-                println(this)
                 fire(ClientAuthRS(this))
             }
         }
