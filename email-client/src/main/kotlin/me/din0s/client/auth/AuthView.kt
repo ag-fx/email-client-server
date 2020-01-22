@@ -4,6 +4,7 @@ import javafx.beans.property.SimpleStringProperty
 import javafx.event.ActionEvent
 import javafx.event.EventHandler
 import javafx.geometry.Pos
+import javafx.geometry.VPos
 import javafx.scene.Cursor
 import javafx.scene.Scene
 import javafx.scene.control.Label
@@ -11,7 +12,6 @@ import javafx.scene.control.TextField
 import javafx.scene.input.KeyCode
 import javafx.scene.paint.Color
 import javafx.scene.text.Font
-import me.din0s.client.MailClient
 import me.din0s.client.auth.events.ClientAuthRQ
 import me.din0s.client.auth.events.ClientAuthRS
 import me.din0s.client.auth.events.SwitchPage
@@ -30,17 +30,24 @@ class AuthView : View("Mail Client") {
 
     override fun onDock() {
         super.onDock()
-        currentStage?.isResizable = false
+        with(currentStage!!) {
+            isResizable = false
+            scene.reset()
+            width = 395.0
+            height = 375.0
+            centerOnScreen()
+        }
     }
 
-    override val root = borderpane {
+    override val root = vbox {
+        style {
+            paddingAll = 15.0
+            alignment = Pos.CENTER
+        }
+
         subscribe<SwitchPage> {
             isLogin = !isLogin
-            scene.reset()
-            val name = (lookup("#name") as TextField)
-            name.clear()
-            name.requestFocus()
-            (lookup("#pwd") as TextField).clear()
+            scene.clear()
             (lookup("#fieldText") as Fieldset).text = when {
                 isLogin -> "Log In"
                 else -> "Register"
@@ -52,11 +59,10 @@ class AuthView : View("Mail Client") {
         }
 
         subscribe<ClientAuthRS> {
+            scene.clear()
             if (it.res is OkRS) {
-                MailClient.user = username.value
                 replaceWith<HomeView>()
             } else {
-                scene.reset()
                 if (isLogin) {
                     error("Invalid credentials", "The credentials you provided are invalid. Try again!")
                 } else {
@@ -65,11 +71,11 @@ class AuthView : View("Mail Client") {
             }
         }
 
-        center = form {
+        form {
             fieldset("Log In") {
                 id = "fieldText"
 
-                label()
+                text()
 
                 style {
                     alignment = Pos.CENTER
@@ -94,7 +100,7 @@ class AuthView : View("Mail Client") {
                 label("This field cannot be empty!") {
                     id = "nameError"
                     style {
-                        visibility = FXVisibility.HIDDEN
+                        fontSize = 14.px
                     }
                 }
 
@@ -120,7 +126,7 @@ class AuthView : View("Mail Client") {
                 label("This field cannot be empty!") {
                     id = "pwdError"
                     style {
-                        visibility = FXVisibility.HIDDEN
+                        fontSize = 14.px
                     }
                 }
 
@@ -136,27 +142,24 @@ class AuthView : View("Mail Client") {
                         cursor = Cursor.HAND
                     }
                 }
-
-                text()
-
-                progressbar {
-                    id = "progress"
-                    style {
-                        visibility = FXVisibility.HIDDEN
-                    }
-                }
             }
         }
 
-        bottom = label("Don't have an account? Register now!") {
+        progressbar {
+            id = "progress"
+            prefHeight = 14.0
+        }
+
+        label("Don't have an account? Register now!") {
             id = "botLabel"
-            onMouseClicked = EventHandler {
-                fire(SwitchPage)
-            }
+
             style {
                 cursor = Cursor.HAND
-                paddingAll = 2
                 underline = true
+            }
+
+            onMouseClicked = EventHandler {
+                fire(SwitchPage)
             }
         }
     }
@@ -172,16 +175,27 @@ class AuthView : View("Mail Client") {
         } else {
             if (username.value.isNullOrBlank()) {
                 lookup("#nameError").style {
-                    visibility = FXVisibility.VISIBLE
                     textFill = Color.DARKRED
+                    visibility = FXVisibility.VISIBLE
                 }
             }
             if (password.value.isNullOrBlank()) {
                 lookup("#pwdError").style {
-                    visibility = FXVisibility.VISIBLE
                     textFill = Color.DARKRED
+                    visibility = FXVisibility.VISIBLE
                 }
             }
+        }
+    }
+
+    private fun Scene.clear() {
+        reset()
+        with(lookup("#name") as TextField) {
+            clear()
+            requestFocus()
+        }
+        with(lookup("#pwd") as TextField) {
+            clear()
         }
     }
 

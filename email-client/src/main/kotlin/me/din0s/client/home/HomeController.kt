@@ -2,14 +2,12 @@ package me.din0s.client.home
 
 import me.din0s.client.MailClient
 import me.din0s.client.home.events.*
+import me.din0s.common.requests.auth.LogoutRQ
 import me.din0s.common.requests.email.DeleteEmailRQ
 import me.din0s.common.requests.email.ReadEmailRQ
 import me.din0s.common.requests.email.ShowEmailsRQ
-import me.din0s.common.responses.IResponse
 import me.din0s.common.responses.email.ReadEmailRS
 import me.din0s.common.responses.email.ShowEmailsRS
-import me.din0s.common.responses.generic.ErrorRS
-import me.din0s.common.responses.generic.OkRS
 import tornadofx.Controller
 
 object HomeController : Controller() {
@@ -35,9 +33,13 @@ object HomeController : Controller() {
         }
 
         subscribe<AckEmailRQ> {
-            with(MailClient.send(ReadEmailRQ(it.id, noOp = true))) {
-                fire(AckEmailRS(this))
-            }
+            MailClient.send(ReadEmailRQ(it.id, noOp = true))
+            fire(AckEmailRS)
+        }
+
+        subscribe<DisconnectRQ> {
+            MailClient.send(LogoutRQ)
+            fire(DisconnectRS)
         }
     }
 }

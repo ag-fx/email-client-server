@@ -23,10 +23,7 @@ class WriterView : View("New Email") {
         super.onDock()
 
         with(currentStage!!) {
-            isResizable = true
-//            width = 800.0
-//            minWidth = 400.0
-//            minHeight = 300.0
+            isResizable = false
             centerOnScreen()
         }
     }
@@ -53,6 +50,7 @@ class WriterView : View("New Email") {
                 field("Subject:") {
                     textfield(subject)
                 }
+                text()
                 textarea(body)
                 button("Send!") {
                     style {

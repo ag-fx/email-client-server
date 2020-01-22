@@ -12,13 +12,14 @@ import javafx.scene.control.TableColumn
 import javafx.scene.control.TableRow
 import javafx.scene.text.FontWeight
 import javafx.util.Callback
+import me.din0s.client.MailClient
+import me.din0s.client.auth.AuthView
 import me.din0s.client.home.events.*
+import me.din0s.client.viewer.ViewerView
 import me.din0s.client.writer.WriterView
 import tornadofx.*
-import java.text.SimpleDateFormat
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
-import javax.swing.text.DateFormatter
 
 class HomeView : View("Mail Client") {
     init {
@@ -30,9 +31,10 @@ class HomeView : View("Mail Client") {
         super.onDock()
         with(currentStage!!) {
             isResizable = true
-            width = 800.0
-            minWidth = 400.0
+            minWidth = 550.0
             minHeight = 300.0
+            width = 800.0
+            height = 600.0
             centerOnScreen()
         }
     }
@@ -61,6 +63,10 @@ class HomeView : View("Mail Client") {
             emails.setAll(it.mailbox.sortedByDescending { e -> e.date }.map { e -> EmailPreview(e.id, e.subject, e.sender, e.isRead, e.date) })
         }
 
+        subscribe<FetchEmailRS> {
+            ViewerView(it.email).openWindow()
+        }
+
         left = borderpane() {
             paddingAll = 12.0
 
@@ -69,7 +75,7 @@ class HomeView : View("Mail Client") {
                     prefWidth = 150.0
 
                     onAction = EventHandler {
-                        WriterView().openModal()
+                        WriterView().openWindow()
                     }
                 }
 
@@ -84,7 +90,12 @@ class HomeView : View("Mail Client") {
                 }
             }
 
-            bottom = button("Log Out")
+            bottom = button("Log Out") {
+                onAction = EventHandler {
+                    fire(DisconnectRQ)
+                    replaceWith<AuthView>()
+                }
+            }
         }
 
         center = tableview(emails) {

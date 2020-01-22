@@ -2,7 +2,6 @@ package me.din0s.server
 
 import me.din0s.common.entities.Account
 import me.din0s.common.entities.Email
-import me.din0s.common.entities.Mailbox
 import me.din0s.common.requests.IRequest
 import me.din0s.common.requests.auth.LoginRQ
 import me.din0s.common.requests.auth.LogoutRQ
@@ -29,91 +28,91 @@ class ClientHandler(client: Socket) {
     init {
         var acc: Account? = null
         var run = true
-        try {
-            while (run) {
-                val req = input.readObject()
-                if (req !is IRequest) {
-                    writeErr(ResponseCode.BAD_REQUEST)
-                    error("Received invalid request. Closing connection")
-                } else {
-                    println("> Incoming request: $req")
-                }
-                if (req.needAuth() && acc == null) {
-                    writeErr(ResponseCode.NO_AUTH)
-                } else {
-                    when (req) {
-                        /* AUTH HANDLING */
-                        is RegisterRQ -> {
-                            val (user, pwd) = req
-                            if (MailServer.getUser(user) != null) {
-                                writeErr(ResponseCode.MAIL_EXISTS)
-                            } else {
-                                acc = Account(user, pwd)
-                                MailServer.addAccount(acc)
-                                writeOk()
-                            }
-                        }
-                        is LoginRQ -> {
-                            val (user, pwd) = req
-                            val authAcc = MailServer.authenticateUser(user, pwd)
-                            if (authAcc != null) {
-                                acc = authAcc
-                                writeOk()
-                            } else {
-                                writeErr(ResponseCode.AUTH_FAIL)
-                            }
-                        }
-                        is LogoutRQ -> {
-                            acc = null
-                            writeOk()
-                        }
-                        /* EMAIL HANDLING */
-                        is NewEmailRQ -> {
-                            val (receiver, subject, body) = req
-                            val recipient = MailServer.getUser(receiver)
-                            if (recipient == null) {
-                                writeErr(ResponseCode.INVALID_RECIPIENT)
-                            } else {
-                                val sender = acc!!.username
-                                val email = Email(sender, receiver, subject, body)
-                                acc.mailbox.addEmail(email)
-                                writeOk()
-                            }
-                        }
-                        is ShowEmailsRQ -> {
-                            write(ShowEmailsRS(acc!!.mailbox.getAll()))
-                        }
-                        is ReadEmailRQ -> {
-                            val (id, pureAck) = req
-                            val email = acc!!.mailbox.readEmail(id)
-                            if (email == null) {
-                                writeErr(ResponseCode.INVALID_EMAIL_ID)
-                            } else {
-                                if (pureAck) {
-                                    writeOk()
+        input.use { input ->
+            output.use {
+                while (run) {
+                    val req = input.readObject()
+                    if (req !is IRequest) {
+                        writeErr(ResponseCode.BAD_REQUEST)
+                        error("Received invalid request. Closing connection")
+                    } else {
+                        println("> Incoming request: $req")
+                    }
+                    if (req.needAuth() && acc == null) {
+                        writeErr(ResponseCode.NO_AUTH)
+                    } else {
+                        when (req) {
+                            /* AUTH HANDLING */
+                            is RegisterRQ -> {
+                                val (user, pwd) = req
+                                if (MailServer.getUser(user) != null) {
+                                    writeErr(ResponseCode.MAIL_EXISTS)
                                 } else {
-                                    write(ReadEmailRS(email))
+                                    acc = Account(user, pwd)
+                                    MailServer.addAccount(acc!!)
+                                    writeOk()
                                 }
                             }
-                        }
-                        is DeleteEmailRQ -> {
-                            val (id) = req
-                            if (acc!!.mailbox.deleteEmail(id)) {
-                                writeOk()
-                            } else {
-                                writeErr(ResponseCode.INVALID_EMAIL_ID)
+                            is LoginRQ -> {
+                                val (user, pwd) = req
+                                val authAcc = MailServer.authenticateUser(user, pwd)
+                                if (authAcc != null) {
+                                    acc = authAcc
+                                    writeOk()
+                                } else {
+                                    writeErr(ResponseCode.AUTH_FAIL)
+                                }
                             }
-                        }
-                        /* CONNECTION HANDLING */
-                        is ExitRQ -> {
-                            run = false
+                            is LogoutRQ -> {
+                                acc = null
+                                writeOk()
+                            }
+                            /* EMAIL HANDLING */
+                            is NewEmailRQ -> {
+                                val (receiver, subject, body) = req
+                                val recipient = MailServer.getUser(receiver)
+                                if (recipient == null) {
+                                    writeErr(ResponseCode.INVALID_RECIPIENT)
+                                } else {
+                                    val sender = acc!!.username
+                                    val email = Email(sender, receiver, subject, body)
+                                    acc!!.mailbox.addEmail(email)
+                                    writeOk()
+                                }
+                            }
+                            is ShowEmailsRQ -> {
+                                write(ShowEmailsRS(acc!!.mailbox.getAll()))
+                            }
+                            is ReadEmailRQ -> {
+                                val (id, pureAck) = req
+                                val email = acc!!.mailbox.readEmail(id)
+                                if (email == null) {
+                                    writeErr(ResponseCode.INVALID_EMAIL_ID)
+                                } else {
+                                    if (pureAck) {
+                                        writeOk()
+                                    } else {
+                                        write(ReadEmailRS(email))
+                                    }
+                                }
+                            }
+                            is DeleteEmailRQ -> {
+                                val (id) = req
+                                if (acc!!.mailbox.deleteEmail(id)) {
+                                    writeOk()
+                                } else {
+                                    writeErr(ResponseCode.INVALID_EMAIL_ID)
+                                }
+                            }
+                            /* CONNECTION HANDLING */
+                            is ExitRQ -> {
+                                writeOk()
+                                run = false
+                            }
                         }
                     }
                 }
             }
-        } finally {
-            output.close()
-            input.close()
         }
     }
 

@@ -2,14 +2,14 @@ package me.din0s.client
 
 import me.din0s.client.auth.AuthView
 import me.din0s.common.requests.IRequest
+import me.din0s.common.requests.auth.LogoutRQ
 import me.din0s.common.requests.connection.ExitRQ
 import me.din0s.common.responses.IResponse
+import me.din0s.common.responses.generic.OkRS
 import tornadofx.App
 import tornadofx.launch
-import java.io.InputStream
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
-import java.io.OutputStream
 import java.net.Socket
 
 fun main(args: Array<String>) {
@@ -51,16 +51,13 @@ class MailClient : App(AuthView::class) {
         sIn.close()
         sOut.close()
         println("Done, bye!")
-        try {
-            super.stop()
-        } catch (_: Exception) {}
+        super.stop()
     }
 
     companion object {
         private lateinit var socket: Socket
         private lateinit var sOut: ObjectOutputStream
         private lateinit var sIn: ObjectInputStream
-        lateinit var user: String
 
         fun send(req: IRequest): IResponse {
             println("> Outgoing request $req")
