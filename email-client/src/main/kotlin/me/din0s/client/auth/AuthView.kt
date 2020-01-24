@@ -18,6 +18,9 @@ import me.din0s.client.home.HomeView
 import me.din0s.common.responses.generic.OkRS
 import tornadofx.*
 
+private const val ANY_CHAR = "[α-ωa-z0-9!#\$%&'*+/=?^_`{|}~-]"
+private val USERNAME_REGEX = "${ANY_CHAR}+(?:\\.${ANY_CHAR}+)*".toRegex(RegexOption.IGNORE_CASE)
+
 class AuthView : View("Mail Client") {
     private val username = SimpleStringProperty()
     private val password = SimpleStringProperty()
@@ -72,7 +75,7 @@ class AuthView : View("Mail Client") {
 
                 text()
 
-                field("Username: ") {
+                field("Email: ") {
                     textfield(username) {
                         id = "name"
                         style {
@@ -89,7 +92,21 @@ class AuthView : View("Mail Client") {
                                 scene.lookup("#pwd").requestFocus()
                             }
                         }
+
+                        onKeyReleased = EventHandler {
+                            if (!username.value.isNullOrBlank() && !username.value.matches(USERNAME_REGEX)) {
+                                style(true) {
+                                    focusColor = Color.RED
+                                }
+                            } else {
+                                style(true) {
+                                    focusColor = Color.CORNFLOWERBLUE
+                                }
+                            }
+                        }
                     }
+
+                    label("@ auth.gr")
                 }
 
                 field("Password: ") {
@@ -152,12 +169,16 @@ class AuthView : View("Mail Client") {
 
     private fun Scene.doSubmit() {
         if (!username.value.isNullOrBlank() && !password.value.isNullOrBlank()) {
-            fire(ClientAuthRQ(username.value, password.value, isLogin))
-            lookup("#name").isDisable = true
-            lookup("#pwd").isDisable = true
-            lookup("#submit").isDisable = true
-            lookup("#botLabel").isDisable = true
-            lookup("#progress").style { visibility = FXVisibility.VISIBLE }
+            if (!username.value.matches(USERNAME_REGEX)) {
+                error("Invalid email address", "The value you entered is not a valid email address!")
+            } else {
+                fire(ClientAuthRQ("${username.value}@auth.gr", password.value, isLogin))
+                lookup("#name").isDisable = true
+                lookup("#pwd").isDisable = true
+                lookup("#submit").isDisable = true
+                lookup("#botLabel").isDisable = true
+                lookup("#progress").style { visibility = FXVisibility.VISIBLE }
+            }
         } else {
             if (username.value.isNullOrBlank()) {
                 (lookup("#name") as TextField).promptText = "Enter your username"
