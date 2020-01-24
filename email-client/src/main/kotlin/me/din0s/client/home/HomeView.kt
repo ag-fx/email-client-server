@@ -12,7 +12,6 @@ import javafx.scene.control.TableColumn
 import javafx.scene.control.TableRow
 import javafx.scene.text.FontWeight
 import javafx.util.Callback
-import me.din0s.client.MailClient
 import me.din0s.client.auth.AuthView
 import me.din0s.client.home.events.*
 import me.din0s.client.viewer.ViewerView
@@ -69,7 +68,6 @@ class HomeView : View("Mail Client") {
         }
 
         subscribe<DisconnectRS> {
-            MailClient.closeConnection()
             replaceWith<AuthView>()
         }
 

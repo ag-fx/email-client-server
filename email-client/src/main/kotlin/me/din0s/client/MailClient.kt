@@ -12,20 +12,31 @@ import java.lang.IllegalStateException
 fun main(args: Array<String>) {
     val ip: String
     val port: String
-    when {
-        args.isEmpty() -> {
+    val debug: String
+    when (args.size) {
+        0 -> {
             ip = "127.0.0.1"
             port = "4200"
+            debug = "false"
         }
-        args.size == 2 -> {
+        2 -> {
             ip = args[0]
             port = args[1]
+            debug = "false"
+        }
+        3 -> {
+            ip = args[0]
+            port = args[1]
+            debug = args[2]
         }
         else -> {
-            error("Unexpected amount of arguments! (expected: 2, received: ${args.size}")
+            System.err.println("Invalid arguments passed!")
+            System.err.println("Expected: [ip] [port] (debug)")
+            System.err.println("Received: ${args.joinToString(" ")}")
+            return
         }
     }
-    launch<MailClient>(ip, port)
+    launch<MailClient>(ip, port, debug)
 }
 
 class MailClient : App(AuthView::class) {
@@ -34,7 +45,8 @@ class MailClient : App(AuthView::class) {
         val args = parameters.raw
         val ip = args[0]
         val port = args[1]
-        handler = RequestHandler(ip, port)
+        val debug = args[2]
+        handler = RequestHandler(ip, port, debug.equals("true", true))
     }
 
     override fun start(stage: Stage) {
@@ -61,6 +73,10 @@ class MailClient : App(AuthView::class) {
 
         fun openConnection() {
             handler.openSocket()
+        }
+
+        fun debug(enable: Boolean) {
+            handler.setDebug(enable)
         }
 
         fun send(req: IRequest): IResponse {

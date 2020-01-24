@@ -18,7 +18,10 @@ fun main(args: Array<String>) {
             MailServer.init(port = args[0].toInt())
         }
         else -> {
-            error("Unexpected amount of arguments! (expected: 1, received: ${args.size})")
+            System.err.println("Invalid arguments passed!")
+            System.err.println("Expected: [port]")
+            System.err.println("Received: ${args.joinToString(" ")}")
+            return
         }
     }
 }

@@ -6,7 +6,7 @@ import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.net.Socket
 
-class RequestHandler(private val ip: String, private val port: String) {
+class RequestHandler(private val ip: String, private val port: String, private var debug: Boolean) {
     private var socket: Socket? = null
 
     private lateinit var output: ObjectOutputStream
@@ -28,12 +28,17 @@ class RequestHandler(private val ip: String, private val port: String) {
         return socket != null && !socket!!.isClosed
     }
 
+    fun setDebug(value: Boolean) {
+        debug = value
+        println("> Debug mode: $debug")
+    }
+
     fun sendRequest(req: IRequest): IResponse {
-        println("> Outgoing request $req")
+        if (debug) println("> Outgoing request $req")
         output.writeObject(req)
         val res = input.readObject()
         if (res is IResponse) {
-            println("> Incoming response $res")
+            if (debug) println("> Incoming response $res")
             return res
         } else {
             error("Received unexpected response")

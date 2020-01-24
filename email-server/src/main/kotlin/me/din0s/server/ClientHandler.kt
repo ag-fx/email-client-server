@@ -6,6 +6,7 @@ import me.din0s.common.requests.IRequest
 import me.din0s.common.requests.auth.LoginRQ
 import me.din0s.common.requests.auth.LogoutRQ
 import me.din0s.common.requests.auth.RegisterRQ
+import me.din0s.common.requests.connection.DebugRQ
 import me.din0s.common.requests.connection.ExitRQ
 import me.din0s.common.requests.email.DeleteEmailRQ
 import me.din0s.common.requests.email.NewEmailRQ
@@ -25,9 +26,9 @@ class ClientHandler(client: Socket) {
     private val input = ObjectInputStream(client.getInputStream())
     private val output = ObjectOutputStream(client.getOutputStream())
 
-    private lateinit var acc: Account
-    private var isAuthenticated = false
+    private var acc: Account? = null
     private var isRunning = true
+    private var debug = false
 
     init {
         input.use { input ->
@@ -38,9 +39,9 @@ class ClientHandler(client: Socket) {
                         writeErr(ResponseCode.BAD_REQUEST)
                         error("Received invalid request. Closing connection")
                     } else {
-                        println("> Incoming request: $req")
+                        if (debug) println("> Incoming request: $req")
                     }
-                    if (req.needAuth() && !isAuthenticated) {
+                    if (req.needAuth() && acc == null) {
                         writeErr(ResponseCode.NO_AUTH)
                     } else {
                         when (req) {
@@ -51,8 +52,7 @@ class ClientHandler(client: Socket) {
                                     writeErr(ResponseCode.MAIL_EXISTS)
                                 } else {
                                     acc = Account(user, pwd)
-                                    isAuthenticated = true
-                                    MailServer.addAccount(acc)
+                                    MailServer.addAccount(acc!!)
                                     writeOk()
                                 }
                             }
@@ -61,11 +61,14 @@ class ClientHandler(client: Socket) {
                                 val authAcc = MailServer.authenticateUser(user, pwd)
                                 if (authAcc != null) {
                                     acc = authAcc
-                                    isAuthenticated = true
                                     writeOk()
                                 } else {
                                     writeErr(ResponseCode.AUTH_FAIL)
                                 }
+                            }
+                            is LogoutRQ -> {
+                                acc = null
+                                writeOk()
                             }
                             /* EMAIL HANDLING */
                             is NewEmailRQ -> {
@@ -74,18 +77,18 @@ class ClientHandler(client: Socket) {
                                 if (recipient == null) {
                                     writeErr(ResponseCode.INVALID_RECIPIENT)
                                 } else {
-                                    val sender = acc.username
+                                    val sender = acc!!.username
                                     val email = Email(sender, receiver, subject, body)
                                     recipient.mailbox.addEmail(email)
                                     writeOk()
                                 }
                             }
                             is ShowEmailsRQ -> {
-                                write(ShowEmailsRS(acc.mailbox.getAll()))
+                                write(ShowEmailsRS(acc!!.mailbox.getAll()))
                             }
                             is ReadEmailRQ -> {
                                 val (id, pureAck) = req
-                                val email = acc.mailbox.readEmail(id)
+                                val email = acc!!.mailbox.readEmail(id)
                                 if (email == null) {
                                     writeErr(ResponseCode.INVALID_EMAIL_ID)
                                 } else {
@@ -98,16 +101,21 @@ class ClientHandler(client: Socket) {
                             }
                             is DeleteEmailRQ -> {
                                 val (id) = req
-                                if (acc.mailbox.deleteEmail(id)) {
+                                if (acc!!.mailbox.deleteEmail(id)) {
                                     writeOk()
                                 } else {
                                     writeErr(ResponseCode.INVALID_EMAIL_ID)
                                 }
                             }
                             /* CONNECTION HANDLING */
-                            is LogoutRQ, is ExitRQ -> {
+                            is DebugRQ -> {
+                                debug = req.enable
+                                println("> Debug mode: $debug")
+                                writeOk()
+                            }
+                            is ExitRQ -> {
+                                acc = null
                                 isRunning = false
-                                isAuthenticated = false
                                 writeOk()
                             }
                         }
@@ -118,7 +126,7 @@ class ClientHandler(client: Socket) {
     }
 
     private fun write(res: IResponse) {
-        println("> Outgoing response: $res")
+        if (debug) println("> Outgoing response: $res")
         output.writeObject(res)
     }
 

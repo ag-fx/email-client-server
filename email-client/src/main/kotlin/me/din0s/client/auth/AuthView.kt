@@ -11,9 +11,7 @@ import javafx.scene.control.TextField
 import javafx.scene.input.KeyCode
 import javafx.scene.paint.Color
 import me.din0s.client.MailClient
-import me.din0s.client.auth.events.ClientAuthRQ
-import me.din0s.client.auth.events.ClientAuthRS
-import me.din0s.client.auth.events.SwitchPage
+import me.din0s.client.auth.events.*
 import me.din0s.client.home.HomeView
 import me.din0s.common.responses.generic.OkRS
 import tornadofx.*
@@ -30,9 +28,13 @@ class AuthView : View("Mail Client") {
         AuthController.init()
     }
 
+    override fun onBeforeShow() {
+        super.onBeforeShow()
+        MailClient.openConnection()
+    }
+
     override fun onDock() {
         super.onDock()
-        MailClient.openConnection()
         with(currentStage!!) {
             isResizable = false
             scene.reset()
@@ -49,6 +51,10 @@ class AuthView : View("Mail Client") {
             scene.clear()
             isLogin = !isLogin
             scene.loadLoginText()
+        }
+
+        subscribe<SetDebugRS> {
+            lookup("#debug").isDisable = false
         }
 
         subscribe<ClientAuthRS> {
@@ -131,7 +137,16 @@ class AuthView : View("Mail Client") {
                     }
                 }
 
-                text()
+                checkbox ("Debug") {
+                    id = "debug"
+                    paddingAll = 12.0
+
+                    action {
+                        this.isDisable = true
+                        MailClient.debug(this.isSelected)
+                        fire(SetDebugRQ(this.isSelected))
+                    }
+                }
 
                 button("Submit") {
                     id = "submit"
